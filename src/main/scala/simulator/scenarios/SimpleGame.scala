@@ -18,7 +18,7 @@ object SimpleGame {
   val oracle = new Oracle
   oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
-  val contract = new StablecoinBank(
+  val contract = new MinimalDjedStablecoin(
     bankAddress,
     oracle,
     bankFee,

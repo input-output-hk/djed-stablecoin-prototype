@@ -3,7 +3,7 @@ package simulator.scenarios
 import com.typesafe.scalalogging.LazyLogging
 import simulator.{BullMarketEnvironment, Environment, Player, Simulator, StablecoinBuyer, StablecoinSeller}
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.{Address, BuyStablecoinTransaction, Ledger, N, Oracle, SellReservecoinTransaction, SellStablecoinTransaction, StablecoinBank, Transaction}
+import stablecoin.{Address, BuyStablecoinTransaction, Ledger, N, Oracle, SellReservecoinTransaction, SellStablecoinTransaction, MinimalDjedStablecoin, Transaction}
 
 object MarketCrashGame {
   val initStablecoinAccounts: Map[Address, N] = (for (i <- 0 until 1000) yield i -> BigDecimal(1000)).toMap
@@ -18,7 +18,7 @@ object MarketCrashGame {
   val oracle = new Oracle
   oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
-  val contract = new StablecoinBank(
+  val contract = new MinimalDjedStablecoin(
     bankAddress,
     oracle,
     bankFee,

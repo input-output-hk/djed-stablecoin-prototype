@@ -2,11 +2,11 @@ package stablecoin
 
 import org.scalatest.FunSuite
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.StablecoinBankNewFormulasTest.{bankFee, createStablecoinContract, minReserveRatio}
+import stablecoin.ExtendedDjedStablecoinTest.{bankFee, createStablecoinContract, minReserveRatio}
 
 import scala.util.Try
 
-class StablecoinBankNewFormulasTest extends FunSuite {
+class ExtendedDjedStablecoinTest extends FunSuite {
 
   test("buy stablecoins when init/final reserve ratio above optimum") {
     val contract = createStablecoinContract(60000.0, 20000.0, 5000.0, 1.0, optReserveRatio = 2)
@@ -594,7 +594,7 @@ class StablecoinBankNewFormulasTest extends FunSuite {
   }
 }
 
-object StablecoinBankNewFormulasTest {
+object ExtendedDjedStablecoinTest {
   val bankAddress = 1;
   val bankFee = 0.03
   val minReserveRatio = 1.5
@@ -620,7 +620,7 @@ object StablecoinBankNewFormulasTest {
     val oracle = new Oracle
     oracle.updateConversionRate(PegCurrency, BaseCoin, exchangeRate) // 1 BaseCoin = 5 USD (PegCurrency)
 
-    new StablecoinBankNewFormulas(
+    new ExtendedDjedStablecoin(
       bankAddress,
       oracle,
       fee,

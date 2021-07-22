@@ -10,7 +10,7 @@ class LedgerTest extends FunSuite {
   val initReservecoinAccounts = Map[Address,N]((0x1->1), (0x2->2), (0x3->3))
 
   def createDefaultLedger() = {
-    val stablecoinContract = StablecoinBankTest.createStablecoinContract(30, 87, 6)
+    val stablecoinContract = MinimalDjedStablecoinTest.createStablecoinContract(30, 87, 6)
     new Ledger(initBaseAccounts, initStablecoinAccounts, initReservecoinAccounts, stablecoinContract)
   }
 

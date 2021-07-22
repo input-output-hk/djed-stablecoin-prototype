@@ -25,15 +25,15 @@ import scala.util.Try
 // The minimum threshold aims to ensure that stablecoins remain fully backed by reserves
 // even if the price of the base currency falls.
 
-class StablecoinBank(val address: Address,   // bank's address
-                     val oracle: Oracle,     // Oracle used by the bank
-                     val fee: N,  // the fee charged by the bank when buying and selling stablecoins and reservecoins
-                     val minReserveRatio: N, // the bank's minimum reserve ratio
-                     val maxReserveRatio: N, // the bank's maximum reserve ratio
-                     val reservecoinDefaultPrice: N, // default price of reservecoins, used when there are 0 reservecoins, 1 RC = 1 baseCoin * defaultPrice
-                     val initReserves: N = 0.0,  // initial amount of basecoin reserves
-                     val initStablecoins: N = 0.0,  // initial amount of stablecoins
-                     val initReservecoins: N = 0.0  // initial amount of reservecoins
+class MinimalDjedStablecoin(val address: Address, // bank's address
+                            val oracle: Oracle, // Oracle used by the bank
+                            val fee: N, // the fee charged by the bank when buying and selling stablecoins and reservecoins
+                            val minReserveRatio: N, // the bank's minimum reserve ratio
+                            val maxReserveRatio: N, // the bank's maximum reserve ratio
+                            val reservecoinDefaultPrice: N, // default price of reservecoins, used when there are 0 reservecoins, 1 RC = 1 baseCoin * defaultPrice
+                            val initReserves: N = 0.0, // initial amount of basecoin reserves
+                            val initStablecoins: N = 0.0, // initial amount of stablecoins
+                            val initReservecoins: N = 0.0 // initial amount of reservecoins
                     ) {
   // ## Bank's State
   protected var reserves: N = initReserves          // The bank's reserves in the base cryptocurrency

@@ -4,22 +4,22 @@ import stablecoin.Currency.{BaseCoin, PegCurrency}
 
 import scala.util.Try
 
-class StablecoinBankNewFormulas(address: Address, // bank's address
-                                oracle: Oracle, // Oracle used by the bank
-                                baseFee: N, // the base fee charged by the bank when buying and selling stablecoins and reservecoins
-                                minReserveRatio: N, // the bank's minimum reserve ratio
-                                maxReserveRatio: N, // the bank's maximum reserve ratio
-                                val optimalReserveRatio: N, // the bank's optimal reserve ratio
-                                reservecoinDefaultPrice: N, // default price of reservecoins, used when there are 0 reservecoins, 1 RC = 1 baseCoin * defaultPrice
-                                val k_rm: N, // linear correlation coefficient for fee calculation for RC minting
-                                val k_rr: N, // linear correlation coefficient for fee calculation for RC redeeming
-                                val k_sm: N, // linear correlation coefficient for fee calculation for SC minting
-                                val k_sr: N, // linear correlation coefficient for fee calculation for SC redeeming
-                                initReserves: N = 0.0, // initial amount of basecoin reserves
-                                initStablecoins: N = 0.0, // initial amount of stablecoins
-                                initReservecoins: N = 0.0 // initial amount of reservecoins
+class ExtendedDjedStablecoin(address: Address, // bank's address
+                             oracle: Oracle, // Oracle used by the bank
+                             baseFee: N, // the base fee charged by the bank when buying and selling stablecoins and reservecoins
+                             minReserveRatio: N, // the bank's minimum reserve ratio
+                             maxReserveRatio: N, // the bank's maximum reserve ratio
+                             val optimalReserveRatio: N, // the bank's optimal reserve ratio
+                             reservecoinDefaultPrice: N, // default price of reservecoins, used when there are 0 reservecoins, 1 RC = 1 baseCoin * defaultPrice
+                             val k_rm: N, // linear correlation coefficient for fee calculation for RC minting
+                             val k_rr: N, // linear correlation coefficient for fee calculation for RC redeeming
+                             val k_sm: N, // linear correlation coefficient for fee calculation for SC minting
+                             val k_sr: N, // linear correlation coefficient for fee calculation for SC redeeming
+                             initReserves: N = 0.0, // initial amount of basecoin reserves
+                             initStablecoins: N = 0.0, // initial amount of stablecoins
+                             initReservecoins: N = 0.0 // initial amount of reservecoins
                                )
-  extends StablecoinBank(address, oracle, baseFee, minReserveRatio, maxReserveRatio,
+  extends MinimalDjedStablecoin(address, oracle, baseFee, minReserveRatio, maxReserveRatio,
                          reservecoinDefaultPrice, initReserves, initStablecoins, initReservecoins) {
 
   override def stablecoinNominalPrice(r: N, sc: N): N = {
@@ -229,33 +229,6 @@ class StablecoinBankNewFormulas(address: Address, // bank's address
     amountBasecoinsToReturn
   }
 
-//  def calculateBasecoinsForRedeemedStablecoinsIter(amountSC: Int, accuracy: Int = 1) = {
-//    require(amountSC <= stablecoins)
-//    var newReserves = reserves
-//    var newStablecoins = stablecoins
-//    var totalAmountBaseToReturn: N = 0.0
-//
-//    for(i <- 0 until amountSC * accuracy) {
-//      val price = stablecoinNominalPrice(newReserves, newStablecoins)
-//      val amountBase = price / accuracy
-//      val amountBaseToReturn = amountBase //* (1 - fee)
-//      newReserves -= amountBaseToReturn
-//      newStablecoins -= (1.0 / accuracy)
-//      totalAmountBaseToReturn += amountBaseToReturn
-//    }
-//
-//    totalAmountBaseToReturn
-//  }
-//
-//  // TODO: fix formula to work with (k=1). Currently it works correctly only when k<1, e.g. when system is under-collateralized
-//  def calculateBasecoinsForRedeemedStablecoins(amountSC: N) = {
-//    require(amountSC <= stablecoins)
-//    val t1 = 1 / minReserveRatio
-//    val t2 = (stablecoins - amountSC) / stablecoins
-//    val newReserves = reserves * math.pow(t2.doubleValue, t1.doubleValue)
-//    reserves - newReserves
-//  }
-//
   def calculateReservecoinsForRedeemedStablecoinsIter(amountSC: Int, accuracy: Int = 1) = {
     require(amountSC <= stablecoins)
     var newStablecoins = stablecoins

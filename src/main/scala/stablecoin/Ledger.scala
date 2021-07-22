@@ -8,7 +8,7 @@ import scala.util.Try
 class Ledger(initBaseCoinAccounts: Map[Address, N],
              initStableCoinAccounts: Map[Address, N],
              initReserveCoinAccounts: Map[Address, N],
-             val stablecoinContract: StablecoinBank) {
+             val stablecoinContract: MinimalDjedStablecoin) {
 
   private val baseCoinAccounts = MMap[Address, N]().addAll(initBaseCoinAccounts)
   private val stableCoinAccounts = MMap[Address, N]().addAll(initStableCoinAccounts)

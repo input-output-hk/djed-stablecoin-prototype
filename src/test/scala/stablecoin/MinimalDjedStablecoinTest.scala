@@ -2,11 +2,11 @@ package stablecoin
 
 import org.scalatest.FunSuite
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.StablecoinBankTest.{createStablecoinContract}
+import stablecoin.MinimalDjedStablecoinTest.{createStablecoinContract}
 
-class StablecoinBankTest extends FunSuite {
+class MinimalDjedStablecoinTest extends FunSuite {
 
-  test("create StablecoinBank contract") {
+  test("create Minimal Djed contract") {
     val contract = createStablecoinContract(5.0, 10.0, 3.0)
 
     assert(contract.getReservesAmount == 5.0)
@@ -310,7 +310,7 @@ class StablecoinBankTest extends FunSuite {
   }
 }
 
-object StablecoinBankTest {
+object MinimalDjedStablecoinTest {
   val bankAddress = 1;
   val bankFee = 0.01
   val minReserveRatio = 1.5
@@ -325,7 +325,7 @@ object StablecoinBankTest {
     val oracle = new Oracle
     oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
-    new StablecoinBank(
+    new MinimalDjedStablecoin(
       bankAddress,
       oracle,
       fee,
