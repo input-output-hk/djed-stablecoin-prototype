@@ -82,7 +82,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
     assert(contract.getReservesAmount == contract.initReserves - amountBase)
@@ -100,7 +100,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
     assert(contract.getReservesAmount == contract.initReserves - amountBase)
@@ -118,7 +118,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
     assert(contract.getReservesAmount == contract.initReserves - amountBase)
@@ -140,7 +140,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 5) == roundAt(expectedAmountRcIter, 5))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
@@ -162,7 +162,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
@@ -184,7 +184,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
@@ -207,7 +207,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
   }
@@ -225,7 +225,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
-    val (amountBase, amountRC) = contract.sellStablecoinWithSwap(amountSC).get
+    val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
   }

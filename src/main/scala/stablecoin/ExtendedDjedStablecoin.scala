@@ -297,28 +297,30 @@ class ExtendedDjedStablecoin(val oracle: Oracle, // Oracle used by the bank
     else 0.0  // if (reservesRatio() >= minReserveRatio) reservecoins are not paid
   }
 
-  // TODO: reconcile with swap
-  override def sellStablecoins(amountSC: N): Try[N] = ???
+  override def sellStablecoins(amountSC: N): Try[N] = Try {
+    require(amountSC > 0 && amountSC < stablecoins)
+
+    val baseCoinsToReturn = calculateBasecoinsForRedeemedStablecoins(amountSC)
+    reserves -= baseCoinsToReturn
+    stablecoins -= amountSC
+
+    baseCoinsToReturn
+  }
 
   /**
-   * New version of stablecoin redemption. If the system is under-collateralized (i.e., reserves ratio < minReserveRatio),
+   * If the system is under-collateralized (i.e., reserves ratio < pegReservesRatio),
    * redemption is partially fulfilled in basecoins and the rest is returned in reservecoins
    * @param amountSC amount of stablecoins to redeem
    * @return returned number of Basecoins and Reservecoins
    */
-  def sellStablecoinWithSwap(amountSC: N): Try[(N,N)] = Try {
-    require(amountSC > 0)
+  def sellStablecoinsWithSwap(amountSC: N): Try[(N,N)] = Try {
 
-    val baseCoinsToReturn = calculateBasecoinsForRedeemedStablecoins(amountSC)
     val reserveCoinsToReturn = calculateReservecoinsForRedeemedStablecoins(amountSC)
-
-    val newReserves = reserves - baseCoinsToReturn
     val newReservecoins = reservecoins + reserveCoinsToReturn
-    val newStablecoins = stablecoins - amountSC
 
-    reserves = newReserves
+    val baseCoinsToReturn = sellStablecoins(amountSC).get
+
     reservecoins = newReservecoins
-    stablecoins = newStablecoins
 
     (baseCoinsToReturn, reserveCoinsToReturn)
   }
