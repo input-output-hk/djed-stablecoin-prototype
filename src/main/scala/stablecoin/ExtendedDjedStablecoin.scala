@@ -4,44 +4,51 @@ import stablecoin.Currency.{BaseCoin, PegCurrency}
 
 import scala.util.Try
 
-class ExtendedDjedStablecoin(address: Address, // bank's address
-                             oracle: Oracle, // Oracle used by the bank
-                             baseFee: N, // the base fee charged by the bank when buying and selling stablecoins and reservecoins
-                             minReserveRatio: N, // the bank's minimum reserve ratio
-                             maxReserveRatio: N, // the bank's maximum reserve ratio
-                             val optimalReserveRatio: N, // the bank's optimal reserve ratio
-                             reservecoinDefaultPrice: N, // default price of reservecoins, used when there are 0 reservecoins, 1 RC = 1 baseCoin * defaultPrice
+class ExtendedDjedStablecoin(val oracle: Oracle, // Oracle used by the bank
+                             val baseFee: N, // the base fee charged by the bank when buying and selling SCs and RCs
+                             val pegReservesRatio: N, // the minimal reserves ratio for which the peg holds
+                             val optimalReservesRatio: N, // the bank's optimal reserve ratio
+                             val reservecoinDefaultPrice: N, // default price of RCs, used when there are 0 RCs
                              val k_rm: N, // linear correlation coefficient for fee calculation for RC minting
                              val k_rr: N, // linear correlation coefficient for fee calculation for RC redeeming
                              val k_sm: N, // linear correlation coefficient for fee calculation for SC minting
                              val k_sr: N, // linear correlation coefficient for fee calculation for SC redeeming
-                             initReserves: N = 0.0, // initial amount of basecoin reserves
-                             initStablecoins: N = 0.0, // initial amount of stablecoins
-                             initReservecoins: N = 0.0 // initial amount of reservecoins
-                               )
-  extends MinimalDjedStablecoin(address, oracle, baseFee, minReserveRatio, maxReserveRatio,
-                         reservecoinDefaultPrice, initReserves, initStablecoins, initReservecoins) {
+                             val initReserves: N = 0.0, // initial amount of basecoin reserves
+                             val initStablecoins: N = 0.0, // initial amount of stablecoins
+                             val initReservecoins: N = 0.0) // initial amount of reservecoins
+  extends DjedStablecoin {
 
-  override def stablecoinNominalPrice(r: N, sc: N): N = {
-    val p = oracle.conversionRate(PegCurrency, BaseCoin)
-    if (sc == 0) p
+  // Bank's State
+  private var reserves: N = initReserves          // The bank's reserves in the base cryptocurrency
+  private var stablecoins: N = initStablecoins    // The amount of stablecoins currently in circulation
+  private var reservecoins: N = initReservecoins  // The amount of reservecoins currently in circulation
+
+  override def getReservesAmount = reserves
+  override def getStablecoinsAmount = stablecoins
+  override def getReservecoinsAmount = reservecoins
+
+  override def targetPrice = oracle.conversionRate(PegCurrency, BaseCoin)
+
+  override def normLiabilities(R: N, Nsc: N) = stablecoinNominalPrice(R, Nsc) * Nsc
+
+  def stablecoinNominalPrice(R: N = getReservesAmount, Nsc: N = getStablecoinsAmount): N = {
+    val p = targetPrice
+    if (Nsc == 0) p
     else {
-      val ratio = reservesRatio(r, sc)
-      val k = BigDecimal(1.0).min(ratio / minReserveRatio)
+      val ratio = reservesRatio(R, Nsc)
+      val k = BigDecimal(1.0).min(ratio / pegReservesRatio)
       k * p
     }
   }
 
-  override def reservecoinNominalPrice(r: N, sc: N, rc: N): N = {
-    if (rc != 0) {
-      val liab = stablecoinNominalPrice(r, sc) * sc
-      (r - liab) / rc
-    }
+  def reservecoinNominalPrice(R: N, Nsc: N, Nrc: N): N = {
+    if (Nrc != 0)
+      equity(R, Nsc) / Nrc
     else reservecoinDefaultPrice
   }
 
   def calculateBasecoinsForMintedStablecoinsIter(amountSC: Int, accuracy: Int = 1) = {
-    require(reservesRatio() > minReserveRatio)
+    require(reservesRatio() > pegReservesRatio)
     var newReserves = reserves
     var newStablecoins = stablecoins
     var totalAmountBaseToPay: N = 0.0
@@ -49,8 +56,8 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     def fee(r: N, sc: N): N = {
       val ratio = reservesRatio(r, sc)
       val additionalFee =
-        if (ratio < optimalReserveRatio) {
-          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReserveRatio
+        if (ratio < optimalReservesRatio) {
+          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReservesRatio
           k_sm * (optimalReserves - r) / optimalReserves
         }
         else BigDecimal(0.0)
@@ -63,19 +70,19 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
       val amountBaseToPay = amountBase * (1 + fee(newReserves, newStablecoins))
       newReserves += amountBaseToPay
       newStablecoins += (1.0 / accuracy)
-      require(reservesRatio(newReserves, newStablecoins) >= minReserveRatio)
+      require(reservesRatio(newReserves, newStablecoins) >= pegReservesRatio)
       totalAmountBaseToPay += amountBaseToPay
     }
 
     totalAmountBaseToPay
   }
 
-  def calculateBasecoinsForMintedStablecoins(amountSC: Int) = {
-    require(reservesRatio() > minReserveRatio)
+  def calculateBasecoinsForMintedStablecoins(amountSC: N) = {
+    require(reservesRatio() > pegReservesRatio)
     val Pexch = oracle.conversionRate(PegCurrency, BaseCoin)
 
     def calculateAmountWithDynamicFee(sc0: N, r0: N, amount: N) = {
-      val K = k_sm / optimalReserveRatio
+      val K = k_sm / optimalReservesRatio
       val one_plus_K = 1 + K
       val P = Pexch * (1 + baseFee + k_sm)
       val sc0_plus_N = sc0 + amount
@@ -86,9 +93,9 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     val amountBasecoinsToPay =
-      if (reservesRatio() > optimalReserveRatio) {
+      if (reservesRatio() > optimalReservesRatio) {
         // calculating how much SCs need to be bought to decrease ratio to optimal level
-        val amountToOptimum = (reserves - optimalReserveRatio * Pexch * stablecoins) / (Pexch*(optimalReserveRatio-1-baseFee))
+        val amountToOptimum = (reserves - optimalReservesRatio * Pexch * stablecoins) / (Pexch*(optimalReservesRatio-1-baseFee))
         if (amountToOptimum >= amountSC) {
           Pexch * (1+baseFee) * amountSC
         } else {
@@ -104,22 +111,21 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
 
     // sanity check
     val newReserveRatio = reservesRatio(reserves + amountBasecoinsToPay, stablecoins + amountSC)
-    require(newReserveRatio >= minReserveRatio, "The formulas are not suitable if ratio falls below optimum.")
+    require(newReserveRatio >= pegReservesRatio, "The formulas are not suitable if ratio falls below optimum.")
 
     amountBasecoinsToPay
   }
 
-  def buyStablecoins(amountSC: Int): Try[N] = Try {
+  override def buyStablecoins(amountSC: N): Try[N] = Try {
     require(amountSC > 0)
-    require(reservesRatio() > minReserveRatio)
+    require(reservesRatio() > pegReservesRatio)
 
     val baseCoinsToPay = calculateBasecoinsForMintedStablecoins(amountSC)
 
     val newReserves = reserves + baseCoinsToPay
     val newStablecoins = stablecoins + amountSC
 
-    require(acceptableReserveChange(false, true, false, newReserves, stablecoins))
-    require(reservesRatio(newReserves, newStablecoins) >= minReserveRatio)
+    require(reservesRatio(newReserves, newStablecoins) >= pegReservesRatio)
 
     reserves = newReserves
     stablecoins = newStablecoins
@@ -135,8 +141,8 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     def fee(r: N, sc: N): N = {
       val ratio = reservesRatio(r, sc)
       val additionalFee =
-        if (ratio > optimalReserveRatio) {
-          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReserveRatio
+        if (ratio > optimalReservesRatio) {
+          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReservesRatio
           k_sr * (r - optimalReserves) / optimalReserves
         }
         else BigDecimal(0.0)
@@ -155,11 +161,11 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     totalAmountBaseToReturn
   }
 
-  def calculateBasecoinsForRedeemedStablecoins(amountSC: Int) = {
+  def calculateBasecoinsForRedeemedStablecoins(amountSC: N) = {
     val Pexch = oracle.conversionRate(PegCurrency, BaseCoin)
 
     def calculateRange1(sc0: N, r0: N, amount: N) = {
-      val K = k_sr / optimalReserveRatio
+      val K = k_sr / optimalReservesRatio
       val one_plus_K = 1 + K
       val P = -Pexch * (1 - baseFee + k_sr)
       val sc0_min_N = sc0 - amount
@@ -174,7 +180,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     def calculateRange3(sc0: N, r0: N, amount: N) = {
-      val x1 = (1 - baseFee) / minReserveRatio
+      val x1 = (1 - baseFee) / pegReservesRatio
       val x2 = (sc0 - amount) / sc0
       val x = r0 * math.pow(x2.toDouble, x1.toDouble)
       r0 - x
@@ -182,10 +188,10 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
 
     def calculateRange4(sc0: N, r0: N, amount: N) = {
       val rounded_ratio = reservesRatio(r0, sc0).setScale(10, BigDecimal.RoundingMode.HALF_UP)
-      require(rounded_ratio >= minReserveRatio)   // we do rounding to pass the check cause reservesRatio() might be slightly less due to rounding issues when we do BigDecimal->Double conversion in math.pow() on the previous step
-      require(reservesRatio(r0, sc0) < optimalReserveRatio)
+      require(rounded_ratio >= pegReservesRatio)   // we do rounding to pass the check cause reservesRatio() might be slightly less due to rounding issues when we do BigDecimal->Double conversion in math.pow() on the previous step
+      require(reservesRatio(r0, sc0) < optimalReservesRatio)
       // calculating how much SCs need to be redeemed to increase ratio to optimal level
-      val amountToOptimum = (r0 - optimalReserveRatio * Pexch * sc0) / (Pexch*(1 - optimalReserveRatio-baseFee))
+      val amountToOptimum = (r0 - optimalReservesRatio * Pexch * sc0) / (Pexch*(1 - optimalReservesRatio-baseFee))
       if (amountToOptimum >= amount) {
         calculateRange2(amount)
       } else {
@@ -198,11 +204,11 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     def calculateRange5(sc0: N, r0: N, amount: N) = {
-      require(reservesRatio(r0, sc0) < minReserveRatio)
+      require(reservesRatio(r0, sc0) < pegReservesRatio)
       // calculating how much SCs need to be redeemed to increase ratio to minimum level
       val amountToMinimum = {
-        val d = (1 - baseFee) / minReserveRatio
-        val x1 = minReserveRatio * Pexch * math.pow(sc0.toDouble, d.toDouble) / r0
+        val d = (1 - baseFee) / pegReservesRatio
+        val x1 = pegReservesRatio * Pexch * math.pow(sc0.toDouble, d.toDouble) / r0
         sc0 - math.pow(x1.toDouble, (1/(d-1)).toDouble)
       }
       if (amountToMinimum > amount)
@@ -217,10 +223,10 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     val amountBasecoinsToReturn =
-      if (reservesRatio() >= optimalReserveRatio)
+      if (reservesRatio() >= optimalReservesRatio)
         calculateRange1(stablecoins, reserves, amountSC)
       else {
-        if (reservesRatio() < minReserveRatio)
+        if (reservesRatio() < pegReservesRatio)
           calculateRange5(stablecoins, reserves, amountSC)
         else
           calculateRange4(stablecoins, reserves, amountSC)
@@ -238,7 +244,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
 
     def reservecoinsSwapAmount(r: N, sc: N, rc: N) = {
       val p = oracle.conversionRate(PegCurrency, BaseCoin)
-      val k = min(1, reservesRatio(r, sc) / minReserveRatio)
+      val k = min(1, reservesRatio(r, sc) / pegReservesRatio)
       ((1-k)*p) / reservecoinNominalPrice(r, sc, rc)
     }
 
@@ -262,14 +268,14 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
   def calculateReservecoinsForRedeemedStablecoins(amountSC: N): BigDecimal = {
     require(amountSC <= stablecoins)
 
-    if (reservesRatio() < minReserveRatio) {
+    if (reservesRatio() < pegReservesRatio) {
       val Pexch = oracle.conversionRate(PegCurrency, BaseCoin)
       val one_min_fee = 1 - baseFee
-      val inv_rm = (1 / minReserveRatio)
+      val inv_rm = (1 / pegReservesRatio)
       val d = inv_rm * one_min_fee
 
       val amountToMinimum = {
-        val x1 = minReserveRatio * Pexch * math.pow(stablecoins.toDouble, d.toDouble) / reserves
+        val x1 = pegReservesRatio * Pexch * math.pow(stablecoins.toDouble, d.toDouble) / reserves
         stablecoins - math.pow(x1.toDouble, (1 / (d - 1)).toDouble)
       }
       val compensatedSC = amountToMinimum.min(amountSC)
@@ -291,13 +297,16 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     else 0.0  // if (reservesRatio() >= minReserveRatio) reservecoins are not paid
   }
 
+  // TODO: reconcile with swap
+  override def sellStablecoins(amountSC: N): Try[N] = ???
+
   /**
    * New version of stablecoin redemption. If the system is under-collateralized (i.e., reserves ratio < minReserveRatio),
    * redemption is partially fulfilled in basecoins and the rest is returned in reservecoins
    * @param amountSC amount of stablecoins to redeem
    * @return returned number of Basecoins and Reservecoins
    */
-  def sellStablecoinWithSwap(amountSC: Int): Try[(N,N)] = Try {
+  def sellStablecoinWithSwap(amountSC: N): Try[(N,N)] = Try {
     require(amountSC > 0)
 
     val baseCoinsToReturn = calculateBasecoinsForRedeemedStablecoins(amountSC)
@@ -306,7 +315,6 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     val newReserves = reserves - baseCoinsToReturn
     val newReservecoins = reservecoins + reserveCoinsToReturn
     val newStablecoins = stablecoins - amountSC
-    require(acceptableReserveChange(false, false, false, newReserves, newStablecoins))
 
     reserves = newReserves
     reservecoins = newReservecoins
@@ -324,8 +332,8 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     def fee(r: N, sc: N): N = {
       val ratio = reservesRatio(r, sc)
       val additionalFee =
-        if (ratio >= optimalReserveRatio) {
-          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReserveRatio
+        if (ratio >= optimalReservesRatio) {
+          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReservesRatio
           k_rm * (r - optimalReserves) / optimalReserves
         }
         else BigDecimal(0.0)
@@ -355,16 +363,16 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     val rc0_plus_N_div_rc0 = (rc0 + amountRC) / rc0
     val one_plus_fee0 = 1 + baseFee
     val L = stablecoins * oracle.conversionRate(PegCurrency, BaseCoin)
-    val A = optimalReserveRatio / (optimalReserveRatio * (one_plus_fee0 - k_rm) + k_rm)
+    val A = optimalReservesRatio / (optimalReservesRatio * (one_plus_fee0 - k_rm) + k_rm)
 
     def calculateRange1() = {
-      val X = (1 - 1/minReserveRatio) * one_plus_fee0
+      val X = (1 - 1/pegReservesRatio) * one_plus_fee0
       math.pow(rc0_plus_N_div_rc0.toDouble, X.toDouble) * r0
     }
 
     def calculateRange2() = {
-      val X = 1 / (1 - 1/minReserveRatio)
-      val rmin_mul_L = minReserveRatio * L
+      val X = 1 / (1 - 1/pegReservesRatio)
+      val rmin_mul_L = pegReservesRatio * L
       val x1 = math.pow(rc0_plus_N_div_rc0.toDouble, one_plus_fee0.toDouble)
       val x2 = math.pow((rmin_mul_L / r0).toDouble, (-X).toDouble)
       val x3 = rmin_mul_L - L
@@ -372,13 +380,13 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     def calculateRange3() = {
-      val ropt_mul_l = optimalReserveRatio * L
-      val X = 1 / ((1-1/minReserveRatio)*one_plus_fee0)
+      val ropt_mul_l = optimalReservesRatio * L
+      val X = 1 / ((1-1/pegReservesRatio)*one_plus_fee0)
       val Y = 1 / one_plus_fee0
       val r0_pow_X = math.pow(r0.toDouble, X.toDouble)
-      val rmin_min_one_pow_Y = math.pow((minReserveRatio - 1).toDouble, Y.toDouble)
-      val ropt_min_one_pow_Y = math.pow((optimalReserveRatio - 1).toDouble, Y.toDouble)
-      val rmin_mul_L_pow_X = math.pow((minReserveRatio * L).toDouble, X.toDouble)
+      val rmin_min_one_pow_Y = math.pow((pegReservesRatio - 1).toDouble, Y.toDouble)
+      val ropt_min_one_pow_Y = math.pow((optimalReservesRatio - 1).toDouble, Y.toDouble)
+      val rmin_mul_L_pow_X = math.pow((pegReservesRatio * L).toDouble, X.toDouble)
       val x1 = rc0_plus_N_div_rc0 * r0_pow_X * rmin_min_one_pow_Y / (rmin_mul_L_pow_X * ropt_min_one_pow_Y)
       val Z = math.pow(x1.toDouble, (1/A).toDouble)
       val V = one_plus_fee0 / (ropt_mul_l - L)
@@ -395,7 +403,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     def calculateRange5() = {
-      val ropt_mul_l = optimalReserveRatio * L
+      val ropt_mul_l = optimalReservesRatio * L
       val ropt_mul_L_min_L = ropt_mul_l - L
       val x1 = (r0-L) / ropt_mul_L_min_L
       val x2 = math.pow(x1.toDouble, (1 / one_plus_fee0).toDouble)
@@ -408,7 +416,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     }
 
     def calculateRange6() = {
-      val ropt_mul_l = optimalReserveRatio * L
+      val ropt_mul_l = optimalReservesRatio * L
       val V = (one_plus_fee0 + (k_rm * (r0 - ropt_mul_l) / ropt_mul_l)) / (r0 - L)
       val Z = math.pow(rc0_plus_N_div_rc0.toDouble, (1/A).toDouble)
       val E = one_plus_fee0 - k_rm
@@ -424,7 +432,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
      */
     val initReserveRatio = r0 / L
     val newReserves =
-      if (initReserveRatio < minReserveRatio) {
+      if (initReserveRatio < pegReservesRatio) {
         val newReserves1 = calculateRange1()
         val newReserveRatio1 = newReserves1 / L
         lazy val newReserves2 = calculateRange2()
@@ -432,50 +440,48 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
         lazy val newReserves3 = calculateRange3()
         lazy val newReserveRatio3 = newReserves3 / L
 
-        if (newReserveRatio1 < minReserveRatio) {
+        if (newReserveRatio1 < pegReservesRatio) {
           newReserves1
         }
-        else if (minReserveRatio <= newReserveRatio2 && newReserveRatio2 < optimalReserveRatio) {
-          assert(minReserveRatio <= newReserveRatio1)
+        else if (pegReservesRatio <= newReserveRatio2 && newReserveRatio2 < optimalReservesRatio) {
+          assert(pegReservesRatio <= newReserveRatio1)
           newReserves2
         }
         else {
-          assert(optimalReserveRatio <= newReserveRatio2)
-          assert(optimalReserveRatio <= newReserveRatio3)
+          assert(optimalReservesRatio <= newReserveRatio2)
+          assert(optimalReservesRatio <= newReserveRatio3)
           newReserves3
         }
       }
-      else if (minReserveRatio <= initReserveRatio && initReserveRatio < optimalReserveRatio) {
+      else if (pegReservesRatio <= initReserveRatio && initReserveRatio < optimalReservesRatio) {
         val newReserves4 = calculateRange4()
         val newReserveRatio4 = newReserves4 / L
         lazy val newReserves5 = calculateRange5()
         lazy val newReserveRatio5 = newReserves5 / L
 
-        if (newReserveRatio4 < optimalReserveRatio)
+        if (newReserveRatio4 < optimalReservesRatio)
           newReserves4
         else {
-          assert(optimalReserveRatio <= newReserveRatio4)
-          assert(optimalReserveRatio <= newReserveRatio5)
+          assert(optimalReservesRatio <= newReserveRatio4)
+          assert(optimalReservesRatio <= newReserveRatio5)
           newReserves5
         }
       }
       else {
-        assert(optimalReserveRatio <= initReserveRatio)
+        assert(optimalReservesRatio <= initReserveRatio)
         calculateRange6()
       }
 
     newReserves - reserves
   }
 
-  def buyReservecoins(amountRC: Int, accuracy: Int = 10): Try[N] = Try {
+  override def buyReservecoins(amountRC: N): Try[N] = Try {
     require(amountRC > 0)
 
     val baseCoinsToPay = calculateBasecoinsForMintedReservecoins(amountRC)
 
     val newReserves = reserves + baseCoinsToPay
     val newReservecoins = reservecoins + amountRC
-
-    require(acceptableReserveChange(false, true, false, newReserves, stablecoins))
 
     reserves = newReserves
     reservecoins = newReservecoins
@@ -492,8 +498,8 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     def fee(r: N, sc: N): N = {
       val ratio = reservesRatio(r, sc)
       val additionalFee =
-        if (ratio < optimalReserveRatio) {
-          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReserveRatio
+        if (ratio < optimalReservesRatio) {
+          val optimalReserves = sc * oracle.conversionRate(PegCurrency, BaseCoin) * optimalReservesRatio
           k_rr * (optimalReserves - r) / optimalReserves
         } else BigDecimal(0.0)
       baseFee + additionalFee
@@ -522,43 +528,43 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     val rc0_min_N_div_rc0 = (rc0 - amountRC) / rc0
     val one_min_fee0_min_krr = 1 - baseFee - k_rr
     val L = stablecoins * oracle.conversionRate(PegCurrency, BaseCoin)
-    val krr_div_L_ropt = k_rr/(L*optimalReserveRatio)
+    val krr_div_L_ropt = k_rr/(L*optimalReservesRatio)
     val A1 = 1 / one_min_fee0_min_krr
-    val A2 = optimalReserveRatio / (optimalReserveRatio*one_min_fee0_min_krr + k_rr)
+    val A2 = optimalReservesRatio / (optimalReservesRatio*one_min_fee0_min_krr + k_rr)
 
     def calculateRange1() = {
       val V = (one_min_fee0_min_krr + r0*krr_div_L_ropt) / r0
-      val p = (minReserveRatio - 1) / (minReserveRatio * A1)
+      val p = (pegReservesRatio - 1) / (pegReservesRatio * A1)
       val Z = math.pow(rc0_min_N_div_rc0.toDouble, p.toDouble)
       (Z * one_min_fee0_min_krr) / (V - Z * (krr_div_L_ropt))
     }
 
     def calculateRange2() = {
-      val rmin_mul_L = minReserveRatio * L
-      val x1 = (one_min_fee0_min_krr + minReserveRatio*k_rr/optimalReserveRatio)
+      val rmin_mul_L = pegReservesRatio * L
+      val x1 = (one_min_fee0_min_krr + pegReservesRatio*k_rr/optimalReservesRatio)
       val x2 = one_min_fee0_min_krr + r0*krr_div_L_ropt
       val x3 = (r0-L)*x1 / ((rmin_mul_L-L)*x2)
       val x4 = math.pow(x3.toDouble, A2.toDouble) * rc0_min_N_div_rc0
-      val p = (1 - (1 / minReserveRatio)) / A1
+      val p = (1 - (1 / pegReservesRatio)) / A1
       val Z = math.pow(x4.toDouble, p.toDouble)
       val V = x1 / rmin_mul_L
       (Z * one_min_fee0_min_krr) / (V - Z * (krr_div_L_ropt))
     }
 
     def calculateRange3() = {
-      val ropt_min_one = optimalReserveRatio - 1
+      val ropt_min_one = optimalReservesRatio - 1
       val one_min_fee0 = 1 - baseFee
 
       val x1_1 = (r0-L) / (ropt_min_one*L)
       val x1 = math.pow(x1_1.toDouble, (1/one_min_fee0).toDouble)
-      val x2 = (optimalReserveRatio-1) / (minReserveRatio-1)
-      val x3_1 = one_min_fee0_min_krr + minReserveRatio * k_rr / optimalReserveRatio
+      val x2 = (optimalReservesRatio-1) / (pegReservesRatio-1)
+      val x3_1 = one_min_fee0_min_krr + pegReservesRatio * k_rr / optimalReservesRatio
       val x3 = x3_1 / one_min_fee0
       val x4 = math.pow((x2*x3).toDouble, A2.toDouble)
       val x = rc0_min_N_div_rc0 * x1 * x4
-      val p = (1 - (1 / minReserveRatio)) / A1
+      val p = (1 - (1 / pegReservesRatio)) / A1
       val Z = math.pow(x.toDouble, p.toDouble)
-      val V = x3_1 / (minReserveRatio*L)
+      val V = x3_1 / (pegReservesRatio*L)
       (Z * one_min_fee0_min_krr) / (V - Z * (krr_div_L_ropt))
     }
 
@@ -570,7 +576,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
 
     def calculateRange5(): BigDecimal = {
       val one_min_fee0 = 1 - baseFee
-      val roptL_min_L = optimalReserveRatio * L - L
+      val roptL_min_L = optimalReservesRatio * L - L
       val x1_1 = (r0 - L) / roptL_min_L
       val x1 = math.pow(x1_1.toDouble, (1/one_min_fee0).toDouble)
       val Z = math.pow((rc0_min_N_div_rc0 * x1).toDouble, (1/A2).toDouble)
@@ -592,13 +598,13 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
      */
     val initReserveRatio = r0 / L
     val newReserves =
-      if (initReserveRatio < minReserveRatio) {
+      if (initReserveRatio < pegReservesRatio) {
         calculateRange1()
       }
-      else if (minReserveRatio <= initReserveRatio && initReserveRatio < optimalReserveRatio) {
+      else if (pegReservesRatio <= initReserveRatio && initReserveRatio < optimalReservesRatio) {
         val newReserves4 = calculateRange4()
         val newReserveRatio4 = newReserves4 / L
-        if (newReserveRatio4 >= minReserveRatio)
+        if (newReserveRatio4 >= pegReservesRatio)
           newReserves4
         else
           calculateRange2()
@@ -606,12 +612,12 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
       else {
         val newReserves6 = calculateRange6()
         val newReserveRatio6 = newReserves6 / L
-        if (newReserveRatio6 >= optimalReserveRatio)
+        if (newReserveRatio6 >= optimalReservesRatio)
           newReserves6
         else {
           val newReserves5 = calculateRange5()
           val newReserveRatio5 = newReserves5 / L
-          if (newReserveRatio5 >= minReserveRatio)
+          if (newReserveRatio5 >= pegReservesRatio)
             newReserves5
           else
             calculateRange3()
@@ -621,7 +627,7 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
      reserves - newReserves
   }
 
-  def sellReservecoins(amountRC: Int): Try[N] = Try {
+  override def sellReservecoins(amountRC: N): Try[N] = Try {
     require(amountRC > 0)
 
     val baseCoinsToReturn = calculateBasecoinsForRedeemedReservecoins(amountRC)
@@ -630,7 +636,6 @@ class ExtendedDjedStablecoin(address: Address, // bank's address
     val newReservecoins = reservecoins - amountRC
 
     require(newReservecoins > 0)
-    require(acceptableReserveChange(false, false, true, newReserves, stablecoins))
 
     reserves = newReserves
     reservecoins = newReservecoins
