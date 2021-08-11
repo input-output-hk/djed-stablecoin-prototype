@@ -311,7 +311,6 @@ class MinimalDjedStablecoinTest extends FunSuite {
 }
 
 object MinimalDjedStablecoinTest {
-  val bankAddress = 1;
   val bankFee = 0.01
   val minReserveRatio = 1.5
   val maxReserveRatio = 4
@@ -326,7 +325,6 @@ object MinimalDjedStablecoinTest {
     oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
     new MinimalDjedStablecoin(
-      bankAddress,
       oracle,
       fee,
       minReserveRatio,

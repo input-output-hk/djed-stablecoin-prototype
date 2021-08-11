@@ -9,7 +9,6 @@ object SimpleGame {
   val initBasecoinAccounts = Map[Address, N](0x1 -> 10, 0x2 -> 10)
   val initStablecoinAccounts = Map[Address, N](0x2 -> 20)
 
-  val bankAddress = 0x999;
   val bankFee = 0.01
   val minReserveRatio = 1.5
   val maxReserveRatio = 4
@@ -19,7 +18,6 @@ object SimpleGame {
   oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
   val contract = new MinimalDjedStablecoin(
-    bankAddress,
     oracle,
     bankFee,
     minReserveRatio,

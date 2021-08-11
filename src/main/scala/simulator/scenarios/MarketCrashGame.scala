@@ -19,7 +19,6 @@ object MarketCrashGame {
   oracle.updateConversionRate(PegCurrency, BaseCoin, 0.2) // 1 BaseCoin = 5 USD (PegCurrency)
 
   val contract = new MinimalDjedStablecoin(
-    bankAddress,
     oracle,
     bankFee,
     minReserveRatio,
