@@ -34,30 +34,30 @@ class Ledger(initBaseCoinAccounts: Map[Address, N],
         accounts(to) = amount + accounts.getOrElse(to,0.0)
 
       case BuyStablecoinTransaction(from, amountSC) =>
-        val amountBaseToPay = stablecoinContract.calculateAmountBaseToPayForStablecoins(amountSC)
+        val amountBaseToPay = stablecoinContract.calculateBasecoinsForMintedStablecoins(amountSC)
         require(amountSC > 0 && baseCoinAccounts(from) >= amountBaseToPay)
-        if (stablecoinContract.buyStablecoin(amountSC).get != amountBaseToPay)
+        if (stablecoinContract.buyStablecoins(amountSC).get != amountBaseToPay)
           ??? // If this happens something is wrong with the code
         baseCoinAccounts(from) -= amountBaseToPay
         stableCoinAccounts(from) = amountSC + stableCoinAccounts.getOrElse(from, 0.0)
 
       case SellStablecoinTransaction(from,amountSC) =>
         require(amountSC > 0 && stableCoinAccounts(from) >= amountSC)
-        val amountBaseReturned = stablecoinContract.sellStablecoin(amountSC).get
+        val amountBaseReturned = stablecoinContract.sellStablecoins(amountSC).get
         stableCoinAccounts(from) -= amountSC
         baseCoinAccounts(from) = amountBaseReturned + baseCoinAccounts.getOrElse(from,0.0)
 
       case BuyReservecoinTransaction(from,amountRC) =>
-        val amountBaseToPay = stablecoinContract.calculateAmountBaseToPayForReservecoins(amountRC)
+        val amountBaseToPay = stablecoinContract.calculateBasecoinsForMintedReservecoins(amountRC)
         require(amountRC > 0 && baseCoinAccounts(from) >= amountBaseToPay)
-        if (stablecoinContract.buyReservecoin(amountRC).get != amountBaseToPay)
+        if (stablecoinContract.buyReservecoins(amountRC).get != amountBaseToPay)
           assert(false, "Expected amount is not equal to the actual. Something is wrong with the code!!!") // Should never happen
         baseCoinAccounts(from) -= amountBaseToPay
         reserveCoinAccounts(from) = amountRC + reserveCoinAccounts.getOrElse(from,0.0)
 
       case SellReservecoinTransaction(from,amountRC) =>
         require(amountRC > 0 && reserveCoinAccounts(from) >= amountRC)
-        val amountBaseReturned = stablecoinContract.sellReservecoin(amountRC).get
+        val amountBaseReturned = stablecoinContract.sellReservecoins(amountRC).get
         reserveCoinAccounts(from) -= amountRC
         baseCoinAccounts(from) = amountBaseReturned + baseCoinAccounts.getOrElse(from,0.0)
     }

@@ -21,18 +21,18 @@ class MinimalDjedStablecoinTest extends FunSuite {
     val feeToPay = amountBaseToPay * contract.fee
     val totalToPay = amountBaseToPay + feeToPay
 
-    assert(contract.buyStablecoin(amountSC).get == totalToPay)
+    assert(contract.buyStablecoins(amountSC).get == totalToPay)
     assert(contract.getStablecoinsAmount == contract.initStablecoins + amountSC)
     assert(contract.getReservesAmount == contract.initReserves + totalToPay)
     assert(contract.getReservecoinsAmount == contract.initReservecoins)
 
     // test buying when the reserve below the minimal reserve ratio
     val contract2 = createStablecoinContract(1.0, 4.0, 1.0)
-    assert(contract2.buyStablecoin(1.0).isFailure)
+    assert(contract2.buyStablecoins(1.0).isFailure)
 
     // test buying when the reserve below the liabilities
     val contract3 = createStablecoinContract(1.0, 6.0, 1.0)
-    assert(contract3.buyStablecoin(1.0).isFailure)
+    assert(contract3.buyStablecoins(1.0).isFailure)
   }
 
   test("sell stablecoins") {
@@ -40,7 +40,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
     val amountSC = 3
     val expectedAmountBase = amountSC * (1 - contract.fee) * contract.oracle.conversionRate(PegCurrency, BaseCoin)
 
-    assert(contract.sellStablecoin(amountSC).get == expectedAmountBase)
+    assert(contract.sellStablecoins(amountSC).get == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
     assert(contract.getReservesAmount == contract.initReserves - expectedAmountBase)
     assert(contract.getReservecoinsAmount == contract.initReservecoins)
@@ -52,14 +52,14 @@ class MinimalDjedStablecoinTest extends FunSuite {
     val nominalPrice = contract.getReservesAmount / contract.getStablecoinsAmount
     val expectedAmountBase = amountSC * (1 - contract.fee) * nominalPrice
 
-    assert(contract.sellStablecoin(amountSC).get == expectedAmountBase)
+    assert(contract.sellStablecoins(amountSC).get == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
     assert(contract.getReservesAmount == contract.initReserves - expectedAmountBase)
     assert(contract.getReservecoinsAmount == contract.initReservecoins)
 
     val nominalPrice2 = contract.getReservesAmount / contract.getStablecoinsAmount
     val expectedAmountBase2 = amountSC * (1 - contract.fee) * nominalPrice2
-    assert(contract.sellStablecoin(amountSC).get == expectedAmountBase2)
+    assert(contract.sellStablecoins(amountSC).get == expectedAmountBase2)
     // Note that the nominalPrice2 will be higher than the nominalPrice so the second player
     // will receive slightly more base coins for the same amount of stablecoins. This happens due to collected
     // fees from the first player
@@ -71,40 +71,40 @@ class MinimalDjedStablecoinTest extends FunSuite {
     // test initial buying of reservecoins
     val contract = createStablecoinContract(2.0, 10.0, 1.0)
     val amountRC = 6
-    val amountBaseToPay = contract.calculateAmountBaseToPayForReservecoins(amountRC)
+    val amountBaseToPay = contract.calculateBasecoinsForMintedReservecoins(amountRC)
 
-    assert(contract.buyReservecoin(amountRC).get == amountBaseToPay)
+    assert(contract.buyReservecoins(amountRC).get == amountBaseToPay)
     assert(contract.getStablecoinsAmount == contract.initStablecoins)
     assert(contract.getReservesAmount == contract.initReserves + amountBaseToPay)
     assert(contract.getReservecoinsAmount == amountRC + 1)
 
     // test buying when there are already some reserve coins in the bank
     val amountRC2 = 4
-    val amountBaseToPay2 = contract.calculateAmountBaseToPayForReservecoins(amountRC2)
+    val amountBaseToPay2 = contract.calculateBasecoinsForMintedReservecoins(amountRC2)
 
-    assert(contract.buyReservecoin(amountRC2).get == amountBaseToPay2)
+    assert(contract.buyReservecoins(amountRC2).get == amountBaseToPay2)
     assert(contract.getStablecoinsAmount == contract.initStablecoins)
     assert(contract.getReservesAmount == contract.initReserves + amountBaseToPay + amountBaseToPay2)
     assert(contract.getReservecoinsAmount == amountRC + amountRC2 + 1)
 
     // test buying when reserves surpass max limit
-    assert(contract.buyReservecoin(5).isFailure)
+    assert(contract.buyReservecoins(10).isFailure)
 
     // test buying when reserves below the min limit
     val contract2 = createStablecoinContract(1.0, 4.0, 1.0)
-    assert(contract2.buyReservecoin(1.0).isSuccess)
+    assert(contract2.buyReservecoins(1.0).isSuccess)
 
     // test buying when the reserve below the liabilities
     val contract3 = createStablecoinContract(1.0, 6.0, 1.0)
-    assert(contract3.buyReservecoin(1.0).isSuccess)
+    assert(contract3.buyReservecoins(1.0).isSuccess)
   }
 
   test("buy reservecoins nominal formula") {
     val contract = createStablecoinContract(11, 10, 10, 0.1, 0.01)
     contract.oracle.updateConversionRate(PegCurrency, BaseCoin, 1.0)
 
-    val amount1 = contract.calculateAmountBaseToPayForReservecoinsIter(10, 100000)
-    val amount2 = contract.calculateAmountBaseToPayForReservecoins(10.0)
+    val amount1 = contract.calculateBasecoinsForMintedReservecoinsIter(10, 100000)
+    val amount2 = contract.calculateBasecoinsForMintedReservecoins(10.0)
 
     /* Accuracy of the iterative price calculation should be enough to match 5 digits after decimal point */
     assert(roundAt(amount1, 5) == roundAt(amount2, 5))
@@ -123,9 +123,9 @@ class MinimalDjedStablecoinTest extends FunSuite {
 
     var paid = BigDecimal(0)
     for (i <- 0 until 10)
-      paid += contract.buyReservecoin(1.0).get
+      paid += contract.buyReservecoins(1.0).get
 
-    val paid2 = contract2.buyReservecoin(10.0).get
+    val paid2 = contract2.buyReservecoins(10.0).get
 
     assert(contract.getReservesAmount == contract2.getReservesAmount)
     assert(contract.getReservecoinsAmount == contract2.getReservecoinsAmount)
@@ -137,9 +137,9 @@ class MinimalDjedStablecoinTest extends FunSuite {
 
     var paid3 = BigDecimal(0)
     for (i <- 0 until 100)
-      paid3 += contract3.buyReservecoin(0.1).get
+      paid3 += contract3.buyReservecoins(0.1).get
 
-    val paid4 = contract4.buyReservecoin(10.0).get
+    val paid4 = contract4.buyReservecoins(10.0).get
 
     println("Reserves contract 3: " + contract3.getReservesAmount)
     println("Reserves contract 4: " + contract4.getReservesAmount)
@@ -162,7 +162,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
 
     println("Reserves before: " + contract.getReservesAmount)
     println("Reservecoin price before: " + contract.reservecoinNominalPrice())
-    val paidAmount = contract.buyReservecoin(amountRC).get
+    val paidAmount = contract.buyReservecoins(amountRC).get
     println("Reserves after: " + contract.getReservesAmount)
     println("Reservecoin price after: " + contract.reservecoinNominalPrice())
     println("Paid: " + paidAmount)
@@ -186,7 +186,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
 
     println("Reserves before: " + contract.getReservesAmount)
     println("Reservecoin price before: " + contract.reservecoinNominalPrice())
-    val paidAmount = contract.buyReservecoin(amountRC).get
+    val paidAmount = contract.buyReservecoins(amountRC).get
     println("Reserves after: " + contract.getReservesAmount)
     println("Reservecoin price after: " + contract.reservecoinNominalPrice())
     println("Paid: " + paidAmount)
@@ -217,7 +217,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
     }
 
 
-    val paidAmount2 = contract.buyReservecoin(amountRC2).get
+    val paidAmount2 = contract.buyReservecoins(amountRC2).get
     println("Reserves after 2: " + contract.getReservesAmount)
     println("Reservecoin price after 2: " + contract.reservecoinNominalPrice())
     println("Paid 2: " + paidAmount2)
@@ -229,20 +229,20 @@ class MinimalDjedStablecoinTest extends FunSuite {
   test("sell reservecoins") {
     val contract = createStablecoinContract(5.0, 10.0, 3.0)
     val amountRC = 2
-    val expectedAmountBase = contract.calculateAmountBaseToRedeemReservecoins(amountRC)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
 
     /* Accuracy of the iterative price calculation should be enough to match 5 digits after decimal point */
-    val expectedAmountBaseIter = contract.calculateAmountBaseToRedeemReservecoinsIter(amountRC, 100000)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 100000)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
-    assert(contract.sellReservecoin(amountRC).get == expectedAmountBase)
+    assert(contract.sellReservecoins(amountRC).get == expectedAmountBase)
     assert(contract.getStablecoinsAmount == contract.initStablecoins)
     assert(contract.getReservesAmount == contract.initReserves - expectedAmountBase)
     assert(contract.getReservecoinsAmount == contract.initReservecoins - amountRC)
 
     // test selling when reserves below the min limit
     val contract2 = createStablecoinContract(2.0, 11.0, 3.0)
-    assert(contract.sellReservecoin(amountRC).isFailure)
+    assert(contract.sellReservecoins(amountRC).isFailure)
   }
 
   test("sell reservecoins when nominal price < default price") {
@@ -256,16 +256,16 @@ class MinimalDjedStablecoinTest extends FunSuite {
     val amountRC = 2
 
     println("Reservecoin price before: " + contract.reservecoinNominalPrice())
-    println("Expected basecoins to return: " + contract.calculateAmountBaseToRedeemReservecoins(amountRC))
-    assert(contract.sellReservecoin(amountRC).isFailure)
+    println("Expected basecoins to return: " + contract.calculateBasecoinsForBurnedReservecoins(amountRC))
+    assert(contract.sellReservecoins(amountRC).isFailure)
 
     // 2 Test when nominal price = 0
     val contract2 = createStablecoinContract(10, 11, 10, bankFee, reservecoinDefaultPrice)
     contract2.oracle.updateConversionRate(PegCurrency, BaseCoin, 1.0)
 
     println("Reservecoin price before 2: " + contract2.reservecoinNominalPrice())
-    println("Expected basecoins to return 2: " + contract2.calculateAmountBaseToRedeemReservecoins(amountRC))
-    assert(contract2.sellReservecoin(amountRC).isFailure)
+    println("Expected basecoins to return 2: " + contract2.calculateBasecoinsForBurnedReservecoins(amountRC))
+    assert(contract2.sellReservecoins(amountRC).isFailure)
   }
 
   test("sell reservecoins with splitting") {
@@ -280,9 +280,9 @@ class MinimalDjedStablecoinTest extends FunSuite {
 
     var paid3 = BigDecimal(0)
     for (i <- 0 until 50)
-      paid3 += contract3.sellReservecoin(0.1).get
+      paid3 += contract3.sellReservecoins(0.1).get
 
-    val paid4 = contract4.sellReservecoin(5.0).get
+    val paid4 = contract4.sellReservecoins(5.0).get
 
     println("Reserves contract 3: " + contract3.getReservesAmount)
     println("Reserves contract 4: " + contract4.getReservesAmount)
@@ -299,9 +299,9 @@ class MinimalDjedStablecoinTest extends FunSuite {
     val amountRC = 2
 
     val nominalPrice1 = contract.reservecoinNominalPrice()
-    val amountPaid = contract.buyReservecoin(amountRC).get
+    val amountPaid = contract.buyReservecoins(amountRC).get
     val nominalPrice2 = contract.reservecoinNominalPrice()
-    val amountReturned = contract.sellReservecoin(amountRC).get
+    val amountReturned = contract.sellReservecoins(amountRC).get
     val nominalPrice3 = contract.reservecoinNominalPrice()
 
     require(amountPaid > amountReturned)

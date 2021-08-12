@@ -66,7 +66,7 @@ class LedgerTest extends FunSuite {
     val ledger = createDefaultLedger()
 
     val tx1 = BuyStablecoinTransaction(0x1, 5)
-    val amountBaseToPay = ledger.stablecoinContract.calculateAmountBaseToPayForStablecoins(5)
+    val amountBaseToPay = ledger.stablecoinContract.calculateBasecoinsForMintedStablecoins(5)
     assert(ledger.addTransaction(tx1).isSuccess)
     assert(ledger.getBasecoinAccounts(0x1) == initBaseAccounts(0x1) - amountBaseToPay)
     assert(ledger.getStablecoinAccounts(0x1) == initStablecoinAccounts(0x1) + 5)
@@ -109,7 +109,7 @@ class LedgerTest extends FunSuite {
     val contract = ledger.stablecoinContract
 
     val tx1 = BuyReservecoinTransaction(0x1, 2)
-    val amountBaseToPay = contract.calculateAmountBaseToPayForReservecoins(2)
+    val amountBaseToPay = contract.calculateBasecoinsForMintedReservecoins(2)
     assert(ledger.addTransaction(tx1).isSuccess)
     assert(ledger.getBasecoinAccounts(0x1) == initBaseAccounts(0x1) - amountBaseToPay)
     assert(ledger.getReservecoinAccounts(0x1) == initReservecoinAccounts(0x1) + 2)
