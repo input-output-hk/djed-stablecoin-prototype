@@ -78,8 +78,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
     val amountSC = 90
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -96,8 +96,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() > contract.pegReservesRatio)
     val amountSC = 100
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -114,8 +114,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 100
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -132,12 +132,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() > contract.pegReservesRatio)
     val amountSC = 500
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
-    val expectedAmountRcIter = contract.calculateReservecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountRcIter = contract.calculateReservecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountRc = contract.calculateReservecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 5) == roundAt(expectedAmountRcIter, 5))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -154,12 +154,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 5000
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 3) == roundAt(expectedAmountBaseIter, 3))
 
-    val expectedAmountRcIter = contract.calculateReservecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountRcIter = contract.calculateReservecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountRc = contract.calculateReservecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -176,12 +176,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 5000
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 3) == roundAt(expectedAmountBaseIter, 3))
 
-    val expectedAmountRcIter = contract.calculateReservecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountRcIter = contract.calculateReservecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountRc = contract.calculateReservecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -199,12 +199,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() < 1)
     val amountSC = 1800
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 3) == roundAt(expectedAmountBaseIter, 3))
 
-    val expectedAmountRcIter = contract.calculateReservecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountRcIter = contract.calculateReservecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountRc = contract.calculateReservecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -217,12 +217,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 1000
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountBase, 4) == roundAt(expectedAmountBaseIter, 4))
 
-    val expectedAmountRcIter = contract.calculateReservecoinsForRedeemedStablecoinsIter(amountSC, 100)
-    val expectedAmountRc = contract.calculateReservecoinsForRedeemedStablecoins(amountSC)
+    val expectedAmountRcIter = contract.calculateReservecoinsForBurnedStablecoinsIter(amountSC, 100)
+    val expectedAmountRc = contract.calculateReservecoinsForBurnedStablecoins(amountSC)
     assert(roundAt(expectedAmountRc, 3) == roundAt(expectedAmountRcIter, 3))
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
@@ -389,8 +389,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val contract = createStablecoin(20000.0, 20000.0, 5000.0, 1.0)
     val amountRC = 100
 
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
 
     val amountBase = contract.sellReservecoins(amountRC).get
@@ -405,8 +405,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     println("Initial reserve ratio 1: " + contract.reservesRatio())
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountRC = 100
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
     val amountBase = contract.sellReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
@@ -421,8 +421,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract2.reservesRatio() < contract2.optimalReservesRatio
       && contract2.reservesRatio() > contract2.pegReservesRatio)
     val amountRC2 = 200
-    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForRedeemedReservecoinsIter(amountRC2, 1000)
-    val expectedAmountBase2 = contract2.calculateBasecoinsForRedeemedReservecoins(amountRC2)
+    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForBurnedReservecoinsIter(amountRC2, 1000)
+    val expectedAmountBase2 = contract2.calculateBasecoinsForBurnedReservecoins(amountRC2)
     assert(roundAt(expectedAmountBase2, 4) == roundAt(expectedAmountBaseIter2, 4))
     val amountBase2 = contract2.sellReservecoins(amountRC2).get
     assert(amountBase2 == expectedAmountBase2)
@@ -438,8 +438,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     println("Initial reserve ratio 3: " + contract3.reservesRatio())
     assert(contract3.reservesRatio() > contract3.optimalReservesRatio)
     val amountRC3 = 2000
-    val expectedAmountBaseIter3 = contract3.calculateBasecoinsForRedeemedReservecoinsIter(amountRC3, 1000)
-    val expectedAmountBase3 = contract3.calculateBasecoinsForRedeemedReservecoins(amountRC3)
+    val expectedAmountBaseIter3 = contract3.calculateBasecoinsForBurnedReservecoinsIter(amountRC3, 1000)
+    val expectedAmountBase3 = contract3.calculateBasecoinsForBurnedReservecoins(amountRC3)
     assert(roundAt(expectedAmountBase3, 4) == roundAt(expectedAmountBaseIter3, 4))
     val amountBase3 = contract3.sellReservecoins(amountRC3).get
     assert(amountBase3 == expectedAmountBase3)
@@ -454,8 +454,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract4.reservesRatio() < contract4.optimalReservesRatio
       && contract4.reservesRatio() > contract4.pegReservesRatio)
     val amountRC4 = 200
-    val expectedAmountBaseIter4 = contract4.calculateBasecoinsForRedeemedReservecoinsIter(amountRC4, 1000)
-    val expectedAmountBase4 = contract4.calculateBasecoinsForRedeemedReservecoins(amountRC4)
+    val expectedAmountBaseIter4 = contract4.calculateBasecoinsForBurnedReservecoinsIter(amountRC4, 1000)
+    val expectedAmountBase4 = contract4.calculateBasecoinsForBurnedReservecoins(amountRC4)
     assert(roundAt(expectedAmountBase4, 4) == roundAt(expectedAmountBaseIter4, 4))
     val amountBase4 = contract4.sellReservecoins(amountRC4).get
     assert(amountBase4 == expectedAmountBase4)
@@ -473,8 +473,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     println("Initial reserve ratio 5: " + contract5.reservesRatio())
     assert(contract5.reservesRatio() > contract5.optimalReservesRatio)
     val amountRC5 = 1000
-    val expectedAmountBaseIter5 = contract5.calculateBasecoinsForRedeemedReservecoinsIter(amountRC5, 1000)
-    val expectedAmountBase5 = contract5.calculateBasecoinsForRedeemedReservecoins(amountRC5)
+    val expectedAmountBaseIter5 = contract5.calculateBasecoinsForBurnedReservecoinsIter(amountRC5, 1000)
+    val expectedAmountBase5 = contract5.calculateBasecoinsForBurnedReservecoins(amountRC5)
     assert(roundAt(expectedAmountBase5, 3) == roundAt(expectedAmountBaseIter5, 3))
     val amountBase5 = contract5.sellReservecoins(amountRC5).get
     assert(amountBase5 == expectedAmountBase5)
@@ -491,8 +491,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     println("Initial reserve ratio 6: " + contract6.reservesRatio())
     assert(contract6.reservesRatio() > contract6.optimalReservesRatio)
     val amountRC6 = 1000
-    val expectedAmountBaseIter6 = contract6.calculateBasecoinsForRedeemedReservecoinsIter(amountRC6, 1000)
-    val expectedAmountBase6 = contract6.calculateBasecoinsForRedeemedReservecoins(amountRC6)
+    val expectedAmountBaseIter6 = contract6.calculateBasecoinsForBurnedReservecoinsIter(amountRC6, 1000)
+    val expectedAmountBase6 = contract6.calculateBasecoinsForBurnedReservecoins(amountRC6)
     assert(roundAt(expectedAmountBase6, 4) == roundAt(expectedAmountBaseIter6, 4))
     val amountBase6 = contract6.sellReservecoins(amountRC6).get
     assert(amountBase6 == expectedAmountBase6)
@@ -505,8 +505,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val contract = createStablecoin(30000.0, 20000.0, 5000.0, 1.0)
     assert(contract.reservesRatio() == contract.pegReservesRatio)
     val amountRC = 100
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
     assert(expectedAmountBase == contract.sellReservecoins(amountRC).get)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
@@ -514,8 +514,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     // Test when initial ratio at the optimum
     val contract2 = createStablecoin(40000.0, 20000.0, 5000.0, 1.0, optReservesRatio = 2)
     assert(contract2.optimalReservesRatio == contract2.reservesRatio())
-    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase2 = contract2.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase2 = contract2.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase2, 3) == roundAt(expectedAmountBaseIter2, 3))
     assert(expectedAmountBase2 == contract2.sellReservecoins(amountRC).get)
     assert(contract2.reservesRatio() < contract2.optimalReservesRatio)
@@ -526,8 +526,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val contract = createStablecoin(34100.0, 20000.0, 5000.0, 1.0, fee = 0.0, optReservesRatio = 1.7)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
     val amountRC = 3000
-    val expectedAmountBaseIter = contract.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase = contract.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase, 3) == roundAt(expectedAmountBaseIter, 3))
     assert(expectedAmountBase == contract.sellReservecoins(amountRC).get)
     assert(contract.pegReservesRatio > contract.reservesRatio())
@@ -535,8 +535,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     // Test when k_rm equals zero
     val contract2 = createStablecoin(34100.0, 20000.0, 5000.0, 1.0, k_rr = 0.0, optReservesRatio = 1.7)
     assert(contract2.reservesRatio() > contract2.optimalReservesRatio)
-    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForRedeemedReservecoinsIter(amountRC, 1000)
-    val expectedAmountBase2 = contract2.calculateBasecoinsForRedeemedReservecoins(amountRC)
+    val expectedAmountBaseIter2 = contract2.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
+    val expectedAmountBase2 = contract2.calculateBasecoinsForBurnedReservecoins(amountRC)
     assert(roundAt(expectedAmountBase2, 3) == roundAt(expectedAmountBaseIter2, 3))
     assert(expectedAmountBase2 == contract2.sellReservecoins(amountRC).get)
     assert(contract2.reservesRatio() < contract2.pegReservesRatio)

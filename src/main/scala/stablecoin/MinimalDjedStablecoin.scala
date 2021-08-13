@@ -267,7 +267,7 @@ extends DjedStablecoin {
     "\tReservecoin amount: " + getReservecoinsAmount + "\n" +
     "\tStablecoin nominal price: " + stablecoinNominalPrice(reserves, stablecoins) + "\n" +
     "\tReservecoin nominal price: " + reservecoinNominalPrice(reserves, stablecoins, reservecoins) + "\n" +
-    "\tReserve ratio: " + reserves / (stablecoins * oracle.conversionRate(PegCurrency, BaseCoin)) + "\n" +
-    "\tConversion rate(PegCurrency -> BaseCoin): " + oracle.conversionRate(PegCurrency, BaseCoin)
+    "\tReserve ratio: " + reservesRatio() + "\n" +
+    "\tConversion rate(PegCurrency -> BaseCoin): " + targetPrice
   }
 }
