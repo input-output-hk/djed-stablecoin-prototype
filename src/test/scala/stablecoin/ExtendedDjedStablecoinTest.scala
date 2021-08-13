@@ -8,6 +8,12 @@ import scala.util.Try
 
 class ExtendedDjedStablecoinTest extends FunSuite {
 
+  def checkPostState(contract: ExtendedDjedStablecoin, deltaReserve: N, deltaSC: N, deltaRC: N) = Try {
+    assert(contract.getStablecoinsAmount == contract.initStablecoins + deltaSC)
+    assert(contract.getReservesAmount == contract.initReserves + deltaReserve)
+    assert(contract.getReservecoinsAmount == contract.initReservecoins + deltaRC)
+  }
+
   test("buy stablecoins when init/final reserve ratio above optimum") {
     val contract = createStablecoin(60000.0, 20000.0, 5000.0, 1.0, optReservesRatio = 2)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
@@ -22,9 +28,8 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val amountBase = contract.buyStablecoins(amountSC).get
     assert(amountBase == referenceAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins + amountSC)
-    assert(contract.getReservesAmount == contract.initReserves + amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins)
+    assert(contract.reservesRatio() > contract.optimalReservesRatio)
+    assert(checkPostState(contract, amountBase, amountSC, 0).isSuccess)
   }
 
   test("buy stablecoins when init/final reserve ratio below optimum") {
@@ -39,9 +44,9 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val amountBase = contract.buyStablecoins(amountSC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins + amountSC)
-    assert(contract.getReservesAmount == contract.initReserves + amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins)
+    assert(contract.reservesRatio() < contract.optimalReservesRatio)
+    assert(contract.reservesRatio() > contract.pegReservesRatio)
+    assert(checkPostState(contract, amountBase, amountSC, 0).isSuccess)
   }
 
   test("buy stablecoins when init reserve ratio above optimum but final ratio is below optimum") {
@@ -56,17 +61,16 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase = contract.buyStablecoins(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins + amountSC)
-    assert(contract.getReservesAmount == contract.initReserves + amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins)
+    assert(checkPostState(contract, amountBase, amountSC, 0).isSuccess)
   }
 
-  test("buy stablecoins when reserve ratio below optimum minimum") {
+  test("buy stablecoins when reserve ratio below peg") {
     val contract = createStablecoin(29000.0, 20000.0, 5000.0, 1.0, optReservesRatio = 4)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     assert(Try(contract.calculateBasecoinsForMintedStablecoins(1)).isFailure)
     assert(contract.buyStablecoins(1).isFailure)
 
+    // test when initial ratio above peg but final becomes below peg
     val contract2 = createStablecoin(30100.0, 20000.0, 5000.0, 1.0, optReservesRatio = 2)
     assert(contract2.reservesRatio() > contract2.pegReservesRatio)
     assert(Try(contract2.calculateBasecoinsForMintedStablecoins(2000)).isFailure)
@@ -84,13 +88,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
+    assert(checkPostState(contract, -amountBase, -amountSC, 0).isSuccess)
   }
 
-  test("sell stablecoins when init/final reserve ratio below optimum and above minimum") {
+  test("sell stablecoins when init/final reserve ratio below optimum and above peg") {
     val contract = createStablecoin(35000.0, 20000.0, 5000.0, 1.1, optReservesRatio = 2)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
     assert(contract.reservesRatio() > contract.pegReservesRatio)
@@ -102,14 +104,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
     assert(contract.reservesRatio() > contract.pegReservesRatio)
+    assert(checkPostState(contract, -amountBase, -amountSC, 0).isSuccess)
   }
 
-  test("sell stablecoins when init/final reserve ratio below minimum") {
+  test("sell stablecoins when init/final reserve ratio below peg") {
     val contract = createStablecoin(29000.0, 20000.0, 5000.0, 1.1, optReservesRatio = 2)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 100
@@ -120,13 +120,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
+    assert(checkPostState(contract, -amountBase, -amountSC, amountRC).isSuccess)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
   }
 
-  test("sell stablecoins when init reserve ratio below optimum and above minimum, final ratio above optimum") {
+  test("sell stablecoins when init reserve ratio below optimum and above peg, final ratio above optimum") {
     val contract = createStablecoin(39900.0, 20000.0, 5000.0, 1.0, optReservesRatio = 2)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
     assert(contract.reservesRatio() > contract.pegReservesRatio)
@@ -143,13 +141,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
+    assert(checkPostState(contract, -amountBase, -amountSC, 0).isSuccess)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
   }
 
-  test("sell stablecoins when init reserve ratio below minimum, final ratio above optimum") {
+  test("sell stablecoins when init reserve ratio below peg, final ratio above optimum") {
     val contract = createStablecoin(29500.0, 20000.0, 5000.0, 1.0, optReservesRatio = 1.6)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 5000
@@ -165,13 +161,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
+    assert(checkPostState(contract, -amountBase, -amountSC, amountRC).isSuccess)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
   }
 
-  test("sell stablecoins when init reserve ratio below minimum, final ratio above minimum below optimum") {
+  test("sell stablecoins when init reserve ratio below peg, final ratio above peg below optimum") {
     val contract = createStablecoin(29500.0, 20000.0, 5000.0, 1.0, optReservesRatio = 2)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountSC = 5000
@@ -187,9 +181,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val (amountBase, amountRC) = contract.sellStablecoinsWithSwap(amountSC).get
     assert(amountBase == expectedAmountBase)
     assert(amountRC == expectedAmountRc)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins - amountSC)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
+    assert(checkPostState(contract, -amountBase, -amountSC, amountRC).isSuccess)
     assert(contract.reservesRatio() > contract.pegReservesRatio)
     assert(contract.reservesRatio() < contract.optimalReservesRatio)
   }
@@ -240,15 +232,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val amountBase = contract.buyReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins)
-    assert(contract.getReservesAmount == contract.initReserves + amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins + amountRC)
+    assert(checkPostState(contract, amountBase, 0, amountRC).isSuccess)
   }
 
-  test("buy reservecoins (1-st interval):" +
-    " initial and new reserve ratio are below minimum") {
+  test("buy reservecoins (1-st variant):" +
+    " initial and new reserve ratio are below peg") {
     val contract = createStablecoin(20000.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 1: " + contract.reservesRatio())
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountRC = 100
     val expectedAmountBaseIter = contract.calculateBasecoinsForMintedReservecoinsIter(amountRC, 1000)
@@ -257,13 +246,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase = contract.buyReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
-    println("New reserve ratio 1: " + contract.reservesRatio())
   }
 
-  test("buy reservecoins (2-nd interval):" +
-    "initial reserve ratio is below minimum, new ratio is above minimum but below optimum") {
+  test("buy reservecoins (2-nd variant):" +
+    "initial reserve ratio is below peg, new ratio is above peg but below optimum") {
     val contract2 = createStablecoin(29000.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 2: " + contract2.reservesRatio())
     assert(contract2.reservesRatio() < contract2.pegReservesRatio)
     val amountRC2 = 2000
     val expectedAmountBaseIter2 = contract2.calculateBasecoinsForMintedReservecoinsIter(amountRC2, 1000)
@@ -273,14 +260,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(amountBase2 == expectedAmountBase2)
     assert(contract2.reservesRatio() > contract2.pegReservesRatio
       && contract2.reservesRatio() < contract2.optimalReservesRatio)
-    println("New reserve ratio 2: " + contract2.reservesRatio())
   }
 
-  test("buy reservecoins (3-rd interval):" +
-    " initial reserve ratio is below minimum, new ratio is above optimum") {
+  test("buy reservecoins (3-rd variant):" +
+    " initial reserve ratio is below peg, new ratio is above optimum") {
     val optimalReserveRatio = 2
     val contract3 = createStablecoin(29000.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 3: " + contract3.reservesRatio())
     assert(contract3.reservesRatio() < contract3.pegReservesRatio)
     val amountRC3 = 7000
     val expectedAmountBaseIter3 = contract3.calculateBasecoinsForMintedReservecoinsIter(amountRC3, 1000)
@@ -289,13 +274,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase3 = contract3.buyReservecoins(amountRC3).get
     assert(amountBase3 == expectedAmountBase3)
     assert(contract3.reservesRatio() > optimalReserveRatio)
-    println("New reserve ratio 3: " + contract3.reservesRatio())
   }
 
-  test("buy reservecoins (4-th interval):" +
-    " initial and new reserve ratio are above minimum but below optimum") {
+  test("buy reservecoins (4-th variant):" +
+    " initial and new reserve ratio are above peg but below optimum") {
     val contract = createStablecoin(35000.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 4: " + contract.reservesRatio())
     assert(contract.reservesRatio() > contract.pegReservesRatio
       && contract.reservesRatio() < contract.optimalReservesRatio)
     val amountRC = 100
@@ -304,16 +287,14 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
     val amountBase = contract.buyReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
-    println("New reserve ratio 4: " + contract.reservesRatio())
     assert(contract.reservesRatio() > contract.pegReservesRatio
       && contract.reservesRatio() < contract.optimalReservesRatio)
   }
 
-  test("buy reservecoins (5-th interval):" +
-    " initial reserve ratio is above minimum but below optimum, new ratio is above optimum") {
+  test("buy reservecoins (5-th variant):" +
+    " initial reserve ratio is above peg but below optimum, new ratio is above optimum") {
     val optimalReserveRatio = 2
     val contract2 = createStablecoin(37000.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 5: " + contract2.reservesRatio())
     assert(contract2.reservesRatio() > contract2.pegReservesRatio
       && contract2.reservesRatio() < contract2.optimalReservesRatio)
     val amountRC2 = 1000
@@ -323,13 +304,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase2 = contract2.buyReservecoins(amountRC2).get
     assert(amountBase2 == expectedAmountBase2)
     assert(contract2.reservesRatio() > contract2.optimalReservesRatio)
-    println("New reserve ratio 5: " + contract2.reservesRatio())
   }
 
-  test("buy reservecoins (6-th interval): initial and new reserve ratio are above the optimum") {
+  test("buy reservecoins (6-th variant): initial and new reserve ratio are above the optimum") {
     val optimalReserveRatio = 2
     val contract = createStablecoin(45000.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 6: " + contract.reservesRatio())
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
     val amountRC = 500
     val expectedAmountBaseIter = contract.calculateBasecoinsForMintedReservecoinsIter(amountRC, 1000)
@@ -338,11 +317,10 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase = contract.buyReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
     assert(contract.reservesRatio() > contract.optimalReservesRatio)
-    println("New reserve ratio 5: " + contract.reservesRatio())
   }
 
-  test("buy reservecoins when initial reserve ratio at minimum and optimum boundaries") {
-    // Test when initial ratio at the minimum
+  test("buy reservecoins when initial reserve ratio at peg/optimum boundaries") {
+    // Test when initial ratio at peg
     val contract = createStablecoin(30000.0, 20000.0, 5000.0, 1.0)
     assert(contract.reservesRatio() == contract.pegReservesRatio)
     val amountRC = 100
@@ -363,7 +341,7 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(contract2.reservesRatio() > contract2.optimalReservesRatio)
   }
 
-  test("buy reservecoins when base fee or k_rm equals zero") {
+  test("buy reservecoins when baseFee or k_rm equals zero") {
     // Test when base fee equals zero
     val contract = createStablecoin(29000.0, 20000.0, 5000.0, 1.0, fee = 0.0, optReservesRatio = 1.7)
     assert(contract.reservesRatio() < contract.pegReservesRatio)
@@ -395,14 +373,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
 
     val amountBase = contract.sellReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
-    assert(contract.getStablecoinsAmount == contract.initStablecoins)
-    assert(contract.getReservesAmount == contract.initReserves - amountBase)
-    assert(contract.getReservecoinsAmount == contract.initReservecoins - amountRC)
+    assert(checkPostState(contract, -amountBase, 0, -amountRC).isSuccess)
   }
 
-  test("sell reservecoins (1-st interval): initial and new reserve ratio are below minimum") {
+  test("sell reservecoins (1-st variant): initial and new reserve ratio are below peg") {
     val contract = createStablecoin(20000.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 1: " + contract.reservesRatio())
     assert(contract.reservesRatio() < contract.pegReservesRatio)
     val amountRC = 100
     val expectedAmountBaseIter = contract.calculateBasecoinsForBurnedReservecoinsIter(amountRC, 1000)
@@ -410,14 +385,12 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(roundAt(expectedAmountBase, 5) == roundAt(expectedAmountBaseIter, 5))
     val amountBase = contract.sellReservecoins(amountRC).get
     assert(amountBase == expectedAmountBase)
-    println("New reserve ratio 1: " + contract.reservesRatio())
     assert(contract.reservesRatio() < contract.pegReservesRatio)
   }
 
-  test("sell reservecoins (2-nd interval):" +
-    "initial reserve ratio is above minimum but below optimum, new ratio is below optimum") {
+  test("sell reservecoins (2-nd variant):" +
+    "initial reserve ratio is above peg but below optimum, new ratio is below peg") {
     val contract2 = createStablecoin(30010.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 2: " + contract2.reservesRatio())
     assert(contract2.reservesRatio() < contract2.optimalReservesRatio
       && contract2.reservesRatio() > contract2.pegReservesRatio)
     val amountRC2 = 200
@@ -426,16 +399,14 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(roundAt(expectedAmountBase2, 4) == roundAt(expectedAmountBaseIter2, 4))
     val amountBase2 = contract2.sellReservecoins(amountRC2).get
     assert(amountBase2 == expectedAmountBase2)
-    println("New reserve ratio 2: " + contract2.reservesRatio())
     assert(contract2.reservesRatio() < contract2.pegReservesRatio)
   }
 
-  test("sell reservecoins (3-rd interval):" +
-    " initial reserve ratio above the optimum, new ratio is below the minimum") {
+  test("sell reservecoins (3-rd variant):" +
+    " initial reserve ratio above the optimum, new ratio is below the peg") {
 
     val optimalReserveRatio = 1.6
     val contract3 = createStablecoin(32500.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 3: " + contract3.reservesRatio())
     assert(contract3.reservesRatio() > contract3.optimalReservesRatio)
     val amountRC3 = 2000
     val expectedAmountBaseIter3 = contract3.calculateBasecoinsForBurnedReservecoinsIter(amountRC3, 1000)
@@ -444,13 +415,11 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase3 = contract3.sellReservecoins(amountRC3).get
     assert(amountBase3 == expectedAmountBase3)
     assert(contract3.reservesRatio() < contract3.pegReservesRatio)
-    println("New reserve ratio 3: " + contract3.reservesRatio())
   }
 
-  test("sell reservecoins (4-th interval):" +
-    "initial and new reserve ratio are above minimum but below optimum") {
+  test("sell reservecoins (4-th variant):" +
+    "initial and new reserve ratio are above peg but below optimum") {
     val contract4 = createStablecoin(40000.0, 20000.0, 5000.0, 1.0)
-    println("Initial reserve ratio 4: " + contract4.reservesRatio())
     assert(contract4.reservesRatio() < contract4.optimalReservesRatio
       && contract4.reservesRatio() > contract4.pegReservesRatio)
     val amountRC4 = 200
@@ -459,18 +428,16 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(roundAt(expectedAmountBase4, 4) == roundAt(expectedAmountBaseIter4, 4))
     val amountBase4 = contract4.sellReservecoins(amountRC4).get
     assert(amountBase4 == expectedAmountBase4)
-    println("New reserve ratio 4: " + contract4.reservesRatio())
     assert(contract4.reservesRatio() < contract4.optimalReservesRatio
       && contract4.reservesRatio() > contract4.pegReservesRatio)
   }
 
-  test("sell reservecoins (5-th interval): " +
+  test("sell reservecoins (5-th variant): " +
     "initial reserve ratio is above the optimum" +
-    "new ratio is above minimal but below optimal level") {
+    "new ratio is above peg but below optimal level") {
 
     val optimalReserveRatio = 2
     val contract5 = createStablecoin(41000.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 5: " + contract5.reservesRatio())
     assert(contract5.reservesRatio() > contract5.optimalReservesRatio)
     val amountRC5 = 1000
     val expectedAmountBaseIter5 = contract5.calculateBasecoinsForBurnedReservecoinsIter(amountRC5, 1000)
@@ -480,15 +447,13 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     assert(amountBase5 == expectedAmountBase5)
     assert(contract5.reservesRatio() > contract5.pegReservesRatio
       && contract5.reservesRatio() < contract5.optimalReservesRatio)
-    println("New reserve ratio 5: " + contract5.reservesRatio())
   }
 
-  test("sell reservecoins (6-th interval): " +
+  test("sell reservecoins (6-th variant): " +
     "initial and new reserve ratio are above the optimum") {
 
     val optimalReserveRatio = 2
     val contract6 = createStablecoin(50000.0, 20000.0, 5000.0, 1.0, optReservesRatio = optimalReserveRatio)
-    println("Initial reserve ratio 6: " + contract6.reservesRatio())
     assert(contract6.reservesRatio() > contract6.optimalReservesRatio)
     val amountRC6 = 1000
     val expectedAmountBaseIter6 = contract6.calculateBasecoinsForBurnedReservecoinsIter(amountRC6, 1000)
@@ -497,11 +462,10 @@ class ExtendedDjedStablecoinTest extends FunSuite {
     val amountBase6 = contract6.sellReservecoins(amountRC6).get
     assert(amountBase6 == expectedAmountBase6)
     assert(contract6.reservesRatio() > contract6.optimalReservesRatio)
-    println("New reserve ratio 6: " + contract6.reservesRatio())
   }
 
-  test("sell reservecoins when initial ratio at minimum/optimum boundaries") {
-    // Test when initial ratio at the minimum
+  test("sell reservecoins when initial ratio at peg/optimum boundaries") {
+    // Test when initial ratio at the peg
     val contract = createStablecoin(30000.0, 20000.0, 5000.0, 1.0)
     assert(contract.reservesRatio() == contract.pegReservesRatio)
     val amountRC = 100

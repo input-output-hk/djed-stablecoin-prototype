@@ -99,7 +99,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
     assert(contract3.buyReservecoins(1.0).isSuccess)
   }
 
-  test("buy reservecoins nominal formula") {
+  test("buy reservecoins: test continuous price calculation") {
     val contract = createStablecoinContract(11, 10, 10, 0.1, 0.01)
     contract.oracle.updateConversionRate(PegCurrency, BaseCoin, 1.0)
 
@@ -131,7 +131,7 @@ class MinimalDjedStablecoinTest extends FunSuite {
     assert(contract.getReservecoinsAmount == contract2.getReservecoinsAmount)
     assert(paid == paid2)
 
-    // Buy reservecoins with splitting when price is above minimal (i.e., calculated by formula)
+    // Buy reservecoins with splitting when price is above minimal (i.e., calculated by continuous formula)
     val contract3 = createContract(20.0)
     val contract4 = createContract(20.0)
 

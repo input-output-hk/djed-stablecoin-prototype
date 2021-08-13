@@ -131,9 +131,7 @@ class LedgerTest extends FunSuite {
 
     val amountRC = 1.5
     val tx1 = SellReservecoinTransaction(0x3, amountRC)
-    val price = contract.reservecoinNominalPrice(contract.getReservesAmount,
-      contract.getStablecoinsAmount, contract.getReservecoinsAmount)
-    val expectedBaseAmountToReturn = amountRC * (1 - contract.fee) * price
+    val expectedBaseAmountToReturn = contract.calculateBasecoinsForBurnedReservecoins(amountRC)
 
     assert(ledger.addTransaction(tx1).isSuccess)
     assert(ledger.getBasecoinAccounts(0x3) == initBaseAccounts(0x3) + expectedBaseAmountToReturn)
