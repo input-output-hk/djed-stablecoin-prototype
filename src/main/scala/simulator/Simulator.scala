@@ -1,6 +1,7 @@
 package simulator
 
 import com.typesafe.scalalogging.LazyLogging
+import ledger.Ledger
 import stablecoin._
 
 import scala.util.{Failure, Success}

@@ -1,5 +1,6 @@
 package simulator.scenarios
 
+import ledger.Ledger
 import simulator.{BullMarketEnvironment, Simulator, StablecoinBuyer, StablecoinSeller}
 import stablecoin.Currency.{BaseCoin, PegCurrency}
 import stablecoin._

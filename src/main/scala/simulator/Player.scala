@@ -1,7 +1,8 @@
 package simulator
 
+import ledger.{BuyStablecoinTransaction, Ledger, SellStablecoinTransaction, Transaction}
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.{Address, BuyStablecoinTransaction, Ledger, SellStablecoinTransaction, Transaction}
+import stablecoin.Address
 
 trait Player {
 

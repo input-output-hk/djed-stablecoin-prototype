@@ -1,6 +1,7 @@
-package stablecoin
+package ledger
 
-import stablecoin.Ledger.CoinType.CoinType
+import ledger.Ledger.CoinType.CoinType
+import stablecoin.{Address, N}
 
 import scala.util.Random
 

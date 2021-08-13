@@ -1,8 +1,9 @@
 package simulator
 
 import com.typesafe.scalalogging.LazyLogging
+import ledger.Ledger
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.{Address, Ledger}
+import stablecoin.Address
 
 /**
  * An environment can arbitrarily change the ledger state at the beginning of each round

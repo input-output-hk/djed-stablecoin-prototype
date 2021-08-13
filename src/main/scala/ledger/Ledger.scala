@@ -1,6 +1,7 @@
-package stablecoin
+package ledger
 
-import stablecoin.Ledger.CoinType.{BaseCoin, ReserveCoin, StableCoin}
+import ledger.Ledger.CoinType.{BaseCoin, ReserveCoin, StableCoin}
+import stablecoin.{Address, MinimalDjedStablecoin, N}
 
 import scala.collection.mutable.{Map => MMap}
 import scala.util.Try

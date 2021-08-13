@@ -1,7 +1,8 @@
-package stablecoin
+package ledger
 
+import ledger.Ledger.CoinType
 import org.scalatest.FunSuite
-import stablecoin.Ledger.CoinType.{BaseCoin, ReserveCoin, StableCoin}
+import stablecoin.{Address, MinimalDjedStablecoinTest, N}
 
 class LedgerTest extends FunSuite {
 
@@ -17,29 +18,29 @@ class LedgerTest extends FunSuite {
   test("transfer transaction") {
     val ledger = createDefaultLedger()
 
-    val tx1 = TransferTransaction(0x1, 0x2, 1.3, BaseCoin)
+    val tx1 = TransferTransaction(0x1, 0x2, 1.3, CoinType.BaseCoin)
     assert(ledger.addTransaction(tx1).isSuccess)
     assert(ledger.getBasecoinAccounts(0x1) == initBaseAccounts(0x1) - 1.3)
     assert(ledger.getBasecoinAccounts(0x2) == initBaseAccounts(0x2) + 1.3)
     assert(ledger.getStablecoinAccounts == initStablecoinAccounts)
     assert(ledger.getReservecoinAccounts == initReservecoinAccounts)
 
-    val tx2 = TransferTransaction(0x2, 0x5, 10, StableCoin)
+    val tx2 = _root_.ledger.TransferTransaction(0x2, 0x5, 10, CoinType.StableCoin)
     assert(ledger.addTransaction(tx2).isSuccess)
     assert(ledger.getStablecoinAccounts(0x2) == initStablecoinAccounts(0x2) - 10)
     assert(ledger.getStablecoinAccounts(0x5) == 10)
     assert(ledger.getReservecoinAccounts == initReservecoinAccounts)
 
-    val tx3 = TransferTransaction(0x3, 0x1, 3, ReserveCoin)
+    val tx3 = _root_.ledger.TransferTransaction(0x3, 0x1, 3, CoinType.ReserveCoin)
     assert(ledger.addTransaction(tx3).isSuccess)
     assert(ledger.getReservecoinAccounts(0x3) == initReservecoinAccounts(0x3) - 3)
     assert(ledger.getReservecoinAccounts(0x1) == initReservecoinAccounts(0x1) + 3)
 
     val badTxs = List(
-      TransferTransaction(0x1, 0x2, -1, BaseCoin),
-      TransferTransaction(0x1, 0x2, 0, StableCoin),
-      TransferTransaction(0x0, 0x2, 1, BaseCoin),
-      TransferTransaction(0x1, 0x2, 5, ReserveCoin)
+      _root_.ledger.TransferTransaction(0x1, 0x2, -1, CoinType.BaseCoin),
+      _root_.ledger.TransferTransaction(0x1, 0x2, 0, CoinType.StableCoin),
+      _root_.ledger.TransferTransaction(0x0, 0x2, 1, CoinType.BaseCoin),
+      _root_.ledger.TransferTransaction(0x1, 0x2, 5, CoinType.ReserveCoin)
     )
     badTxs.foreach { tx =>
       require(ledger.addTransaction(tx).isFailure)
@@ -74,9 +75,9 @@ class LedgerTest extends FunSuite {
     assert(ledger.stablecoinContract.getStablecoinsAmount == 87 + 5)
 
     val badTxs = List(
-      BuyStablecoinTransaction(0x1, 100),
-      BuyStablecoinTransaction(0x1, 0),
-      BuyStablecoinTransaction(0x0, 5))
+      _root_.ledger.BuyStablecoinTransaction(0x1, 100),
+      _root_.ledger.BuyStablecoinTransaction(0x1, 0),
+      _root_.ledger.BuyStablecoinTransaction(0x0, 5))
     badTxs.foreach(ledger.addTransaction(_).isFailure)
     assert(ledger.stablecoinContract.getReservesAmount == 30 + amountBaseToPay)
     assert(ledger.stablecoinContract.getStablecoinsAmount == 87 + 5)
@@ -97,9 +98,9 @@ class LedgerTest extends FunSuite {
     assert(ledger.stablecoinContract.getStablecoinsAmount == 87 - 10)
 
     val badTxs = List(
-      SellStablecoinTransaction(0x1, 100),
-      SellStablecoinTransaction(0x1, 0),
-      SellStablecoinTransaction(0x0, 5))
+      _root_.ledger.SellStablecoinTransaction(0x1, 100),
+      _root_.ledger.SellStablecoinTransaction(0x1, 0),
+      _root_.ledger.SellStablecoinTransaction(0x0, 5))
     badTxs.foreach(ledger.addTransaction(_).isFailure)
     assert(ledger.stablecoinContract.getStablecoinsAmount == 87 - 10)
   }
@@ -118,9 +119,9 @@ class LedgerTest extends FunSuite {
     assert(contract.getReservecoinsAmount == 6 + 2)
 
     val badTxs = List(
-      BuyReservecoinTransaction(0x1, 10),
-      BuyReservecoinTransaction(0x1, 0),
-      BuyReservecoinTransaction(0x0, 1))
+      _root_.ledger.BuyReservecoinTransaction(0x1, 10),
+      _root_.ledger.BuyReservecoinTransaction(0x1, 0),
+      _root_.ledger.BuyReservecoinTransaction(0x0, 1))
     badTxs.foreach(ledger.addTransaction(_).isFailure)
     assert(contract.getReservecoinsAmount == 6 + 2)
   }
@@ -140,9 +141,9 @@ class LedgerTest extends FunSuite {
     assert(contract.getReservecoinsAmount == 6 - amountRC)
 
     val badTxs = List(
-      SellStablecoinTransaction(0x1, 2),
-      SellStablecoinTransaction(0x1, 0),
-      SellStablecoinTransaction(0x0, 5))
+      _root_.ledger.SellStablecoinTransaction(0x1, 2),
+      _root_.ledger.SellStablecoinTransaction(0x1, 0),
+      _root_.ledger.SellStablecoinTransaction(0x0, 5))
     badTxs.foreach(ledger.addTransaction(_).isFailure)
     assert(contract.getReservecoinsAmount == 6 - amountRC)
   }
@@ -151,10 +152,10 @@ class LedgerTest extends FunSuite {
     val ledger  = createDefaultLedger()
 
     val txs = List(
-      TransferTransaction(0x1, 0x2, 1, BaseCoin),
-      BuyStablecoinTransaction(0x3, 1),
-      BuyStablecoinTransaction(0x1, 1000), // invalid tx
-      SellReservecoinTransaction(0x2, 1)
+      _root_.ledger.TransferTransaction(0x1, 0x2, 1, CoinType.BaseCoin),
+      _root_.ledger.BuyStablecoinTransaction(0x3, 1),
+      _root_.ledger.BuyStablecoinTransaction(0x1, 1000), // invalid tx
+      _root_.ledger.SellReservecoinTransaction(0x2, 1)
     )
     txs.foreach(ledger.addTransaction(_))
 

@@ -1,9 +1,10 @@
 package simulator.scenarios
 
 import com.typesafe.scalalogging.LazyLogging
+import ledger.{Ledger, SellReservecoinTransaction, SellStablecoinTransaction, Transaction}
 import simulator.{BullMarketEnvironment, Environment, Player, Simulator, StablecoinBuyer, StablecoinSeller}
 import stablecoin.Currency.{BaseCoin, PegCurrency}
-import stablecoin.{Address, BuyStablecoinTransaction, Ledger, N, Oracle, SellReservecoinTransaction, SellStablecoinTransaction, MinimalDjedStablecoin, Transaction}
+import stablecoin.{Address, MinimalDjedStablecoin, N, Oracle}
 
 object MarketCrashGame {
   val initStablecoinAccounts: Map[Address, N] = (for (i <- 0 until 1000) yield i -> BigDecimal(1000)).toMap
