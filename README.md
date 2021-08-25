@@ -1,6 +1,6 @@
 Djed Stablecoin
 ====================================================================================================================================================================================
-A prototype implementation of Djed stablecoin presented in the paper [Djed: A Formally Verified Crypto-Backed Pegged Algorithmic Stablecoin](https://eprint.iacr.org/????).
+A prototype implementation of Djed stablecoin presented in the paper [Djed: A Formally Verified Crypto-Backed Pegged Algorithmic Stablecoin](https://eprint.iacr.org/2021/1069).
 The prototype implements both Minimal and Extended versions of Djed.
 
 The repository also contains an implementation of a simple ledger and simulator that can be used to perform various economic simulations.  

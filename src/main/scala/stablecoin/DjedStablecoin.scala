@@ -9,8 +9,8 @@ trait DjedStablecoin {
   def getReservecoinsAmount: N
 
   def targetPrice: N
-  def targetLiabilities(Nsc: N = getStablecoinsAmount): N = Nsc * targetPrice
-  def normLiabilities(R: N = getReservesAmount, Nsc: N = getStablecoinsAmount): N
+  def targetLiabilities(Nsc: N = getStablecoinsAmount): N = Nsc * targetPrice       // full amount of liabilities to SC holders
+  def normLiabilities(R: N = getReservesAmount, Nsc: N = getStablecoinsAmount): N   // normalized liabilities - the amount of liabilities that currently can be paid off (lower or equal to targetLiabilities)
 
   def reservesRatio(R: N = getReservesAmount, Nsc: N = getStablecoinsAmount): N = {
     require(targetLiabilities(Nsc) > 0)
